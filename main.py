@@ -1,24 +1,35 @@
-import libs.static_files_loader as load_static_files
-import libs.database as db
-import libs.API as API
-from tornado.web import Application
-from tornado.httpserver import HTTPServer
-from tornado.ioloop import IOLoop
+import tornado.web
+import tornado.ioloop
+import tornado.httpserver
+from src.static_file import *
+from src.config import *
+from src.page_loader import *
+from src.pages import *
+from src.shell import *
+from src.direct import direct
+
+
+def render(self, template_name, **kwargs):
+    # just to make my life easier
+    with static_files(STATIC_HTML) as static_htmls:
+        self.write(static_htmls.__get_file__(template_name))
+
+
+tornado.web.RequestHandler.render = render
 
 
 def main():
-    application = Application(API.PATH_DIR)
-    http_server = HTTPServer(
+    application = tornado.web.Application(direct)
+    http_server = tornado.httpserver.HTTPServer(
         application,
-        ssl_options={
-            "certfile": load_static_files.load_config_file()["ssl"]["ssl_full_chain"],
-            "keyfile": load_static_files.load_config_file()["ssl"]["ssl_private_key"],
-        },
+        # ssl_options={
+        #     "certfile": CERTFILE,
+        #     "keyfile": PRIVATE_KEY,
+        # },
     )
-    http_server.listen(load_static_files.load_config_file()["network"]["port"])
-    IOLoop.instance().start()
+    http_server.listen(PORT)
+    tornado.ioloop.IOLoop.instance().start()
 
 
-# print(load_static_files.load_static_files())
 if __name__ == "__main__":
     main()
